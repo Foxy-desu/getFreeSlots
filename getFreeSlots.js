@@ -24,10 +24,16 @@ function getFreeSlots(workingHours, busyPeriods) {
         const fiveMinuteSlots = [];
 
         for (let i = hours.start; i <= hours.stop; i++) {
-            for (let j = 0; j < slotsPerHour; j++) {
-                const minutes = (j * 5).toString().padStart(2, '0');
-                const slot = `${i}:${minutes}`;
+            if (i === hours.stop) {
+                const slot = `${i}:00`;
                 fiveMinuteSlots.push(slot);
+            } else {
+                for (let j = 0; j < slotsPerHour; j++) {
+                    const minutes = (j * 5).toString().padStart(2, '0');
+                    const slot = `${i}:${minutes}`;
+                
+                    fiveMinuteSlots.push(slot);
+                }
             }
         };
         return fiveMinuteSlots;
