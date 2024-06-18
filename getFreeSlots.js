@@ -91,5 +91,5 @@ function getFreeSlots(workingHours, busyPeriods) {
     return result;
 }
 
-console.log(getFreeSlots(workingHours, busy));
+getFreeSlots(workingHours, busy);
 
