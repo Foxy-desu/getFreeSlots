@@ -1,4 +1,7 @@
 class Schedule {
+    get test() {
+        console.log(this._formatFreeSlots(this._getFreeSlots(this._targetBusySlots(this._splitWorkingHoursToFiveMinSlots(this._workingHours)))));
+    }
     get workingHours() {
         if(Object.keys(this._workingHours).length) {
             return (
@@ -58,6 +61,15 @@ class Schedule {
             console.error(err.message);
         }
     };
+    get freePeriods() {
+        if(this._freePeriods.length) {
+            return this._freePeriods;
+        } else {
+            console.warn(`No free periods in the schedule yet. Please make sure to set both working periods and busy periods.`);
+            return null;
+        }
+    };
+    _freePeriods = [];
     constructor(workingHours={}, busyPeriods=[]) {
         this._id = Date.now();
         if(this._hoursCheck(workingHours) && Array.isArray(busyPeriods)){
@@ -104,10 +116,116 @@ class Schedule {
     _formatHoursOutput(time) {
         return time.join(':');
     };
+    _splitWorkingHoursToFiveMinSlots(workingHours) {
+        const fiveMinuteSlots = [];
+        const pushSlot = (hour, minute) => {
+            fiveMinuteSlots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
+        }
+        const startHours = Number(workingHours.start[0]),
+              startMinutes = Number(workingHours.start[1]);
+        const stopHours = Number(workingHours.stop[0]),
+              stopMinutes = Number(workingHours.stop[1]);
+        //work day hours
+        if(startHours <= stopHours) {
+            for(let i = startHours; i <= stopHours; i+=1) {
+                if((i === startHours && startMinutes !== 0)) {
+                    for(let j = startMinutes; j <= 55; j+=5) {
+                        pushSlot(i, j);
+                    }
+                } else if(i === stopHours) {
+                    for(let j = 0; j <= stopMinutes; j+=5) {
+                        pushSlot(i, j);
+                    }
+                } else {
+                    for(let j = 0; j <= 55; j+=5) {
+                        pushSlot(i, j);
+                    }
+                    
+                }
+    
+            }
+        } else {
+            //work night hours
+            const hoursArray = [];
+            for(let i = startHours; i <= 23; i+=1) {
+                hoursArray.push(i);
+            }
+            for(let i = 0; i <= stopHours; i+=1) {
+                hoursArray.push(i);
+            }
+
+            hoursArray.forEach((hour)=> {
+                if((hour === startHours && startMinutes!== 0)) {
+                    for(let j = startMinutes; j <= 55; j+=5) {
+                        pushSlot(hour, j);
+                    }
+                } else if(hour === stopHours) {
+                    for(let j = 0; j <= stopMinutes; j+=5) {
+                        pushSlot(hour, j);
+                    }
+                } else {
+                    for(let j = 0; j <= 55; j+=5) {
+                        pushSlot(hour, j);
+                    }
+                    
+                }
+            })
+        }
+        return fiveMinuteSlots
+    };
+    _targetBusySlots(fiveMinuteSlots){
+        const slotsWithTargets = fiveMinuteSlots.map((slot)=> {
+            let isBusy = false;
+
+            this._busyPeriods.forEach((busyPeriod) => {
+                if (slot >= this._formatHoursOutput(busyPeriod.start) && slot < this._formatHoursOutput(busyPeriod.stop)) {
+                    isBusy = true;
+                }
+            });
+            if (!isBusy) {
+                return slot;
+            }
+        });
+        return slotsWithTargets;
+    };
+    _getFreeSlots(slotsWithTargets){
+        // we need 30minute slots
+        const thirtyMinuteSlots = [];
+        let slot = [];
+        let slotStartIndex = 0;
+        let slotEndIndex = 6;
+
+        slotsWithTargets.forEach((currSlot, index)=>{
+            if(!currSlot) {
+                slotStartIndex = index + 1;
+                slotEndIndex = slotStartIndex + 6;
+                slot = [];
+            }
+            if (index === slotEndIndex && currSlot) {
+                slot.push(currSlot);
+                slot.length === 7 && thirtyMinuteSlots.push(slot);
+                slotStartIndex = slotEndIndex;
+                slotEndIndex = slotStartIndex + 6;
+                slot = [];
+            }
+            if (index < slotEndIndex && currSlot) {
+                slot.push(currSlot);
+            }
+        });
+        return thirtyMinuteSlots;   
+    };
+    _formatFreeSlots(freeSlots) {
+        return freeSlots.reduce((result, slotArr)=> {
+            return [
+                ...result,
+                {start: slotArr[0], end: slotArr[slotArr.length -1]}
+            ]
+        },[]);
+    }
 
 } 
 
 const schedule = new Schedule();
-schedule.busyPeriods = [{start: '5:00', stop: '15:00'}]
-schedule.busyPeriods;
-console.table(schedule.busyPeriods);
+schedule.workingHours = {start: "00:00", stop: "03:30"};
+schedule.busyPeriods = [{start: "00:00", stop: "00:25"}, {start: "00:55", stop: "01:15"}, {start:"02:05", stop: "03:00"}]
+schedule.test
