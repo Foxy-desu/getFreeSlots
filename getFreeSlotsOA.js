@@ -1,9 +1,17 @@
 class Schedule {
     get workingHours() {
         if(Object.keys(this._workingHours).length) {
-            return `The working hours are from ${this._formatWorkingHoursOutput(this._workingHours.start)} to ${this._formatWorkingHoursOutput(this._workingHours.stop)}`;
-            //test: return this._workingHours;
-        } else return `No working hours were set yet. Please set working hours using "workingHours" property`
+            return (
+                {
+                    start: this._formatHoursOutput(this._workingHours.start),
+                    stop: this._formatHoursOutput(this._workingHours.stop),
+                }
+            )
+
+        } else {
+            console.warn(`No working hours were set yet. Please set working hours using "workingHours" property`);
+            return null;
+        } 
     };
     set workingHours(workingHours){
         try{
@@ -19,8 +27,16 @@ class Schedule {
     };
     get busyPeriods() {
         if(this._busyPeriods.length) {
-            return this._busyPeriods;
-        } else return `No busy periods were set yet. Please set busy periods using "busyPeriods" property`
+            return this._busyPeriods.map((period)=> {
+                return ({
+                    start: this._formatHoursOutput(period.start),
+                    stop: this._formatHoursOutput(period.stop),
+                })
+            })
+        } else {
+            console.warn(`No busy periods were set yet. Please set busy periods using "busyPeriods" property`);
+            return null;
+        }
 
     };
     set busyPeriods(periods){
@@ -41,7 +57,7 @@ class Schedule {
         } catch(err){
             console.error(err.message);
         }
-    }
+    };
     constructor(workingHours={}, busyPeriods=[]) {
         this._id = Date.now();
         if(this._hoursCheck(workingHours) && Array.isArray(busyPeriods)){
@@ -51,7 +67,7 @@ class Schedule {
             this._workingHours = {};
             this._busyPeriods = [];
         }
-    }
+    };
     _hoursCheck(hours) {
         if(Object.prototype.toString.call(hours) === '[object Object]'
            && Object.keys(hours).length === 2
@@ -84,29 +100,14 @@ class Schedule {
             }
         });
         return result
-    }
-    _formatWorkingHoursOutput(time) {
+    };
+    _formatHoursOutput(time) {
         return time.join(':');
-    }
+    };
+
 } 
 
 const schedule = new Schedule();
-schedule.busyPeriods = [
-    {'start' : '10:30',
-    'stop' : '10:50'
-    },
-    {'start' : '18:40',
-    'stop' : '18:50'
-    },
-    {'start' : '20:40',
-    'stop' : '15:50'
-    },
-    {'start' : '16:20',
-    'stop' : '17:20'
-    },
-    {'start' : '20:05',
-    'stop' : '20:20'
-    }
-];
-
-schedule.workingHours = {start: '10:30', stop: '18:00'};
+schedule.busyPeriods = [{start: '5:00', stop: '15:00'}]
+schedule.busyPeriods;
+console.table(schedule.busyPeriods);
