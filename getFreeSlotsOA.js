@@ -20,6 +20,7 @@ class Schedule {
         try{
             if(this._hoursCheck(workingHours)){
                 this._workingHours = this._hoursNormalize(workingHours);
+                this._hasUncomputedChanges = true;
                 console.log("Working hours were successfully set.")
             } else {
                 throw new Error('An error has occurred while trying to set working hours. Please, make sure you pass an object of the format {start: "00:00", stop: "00:00"}')
@@ -44,32 +45,34 @@ class Schedule {
     };
     set busyPeriods(periods){
         try{
-            const lenBefore = this._busyPeriods.length;
             const checkedPeriods = this._getCheckedBusyPeriods(periods);
             if(checkedPeriods.passed.length > 0) {
                 this._busyPeriods = checkedPeriods.passed.map((period)=> {
                     return this._hoursNormalize(period)
-                })
+                });
+                this._hasUncomputedChanges = true;
 
             } else {
                 throw new Error('An error occurred while trying to set busy periods. No busy period qualified creteria. Please, make sure you pass an array of objects of the format {start: "00:00", stop: "00:00"} +- 5mins.')
             }
-            const lenAfter = this._busyPeriods.length;
-            console.warn(`${lenAfter - lenBefore} ${lenAfter - lenBefore !== 1 ? 'periods were':'period was'} successfully set. ${checkedPeriods.failed.length > 0 ? checkedPeriods.failed.length + ' did not qualify.' : ''}`);
+            console.warn(`${this._busyPeriods.length} ${this._busyPeriods.length ? 'periods were':'period was'} successfully set. ${checkedPeriods.failed.length > 0 ? checkedPeriods.failed.length + ' did not qualify.' : ''}`);
             checkedPeriods.failed.length > 0 && console.table(checkedPeriods.failed);
         } catch(err){
             console.error(err.message);
         }
     };
     get freePeriods() {
-        if(this._freePeriods.length) {
-            return this._freePeriods;
-        } else {
-            console.warn(`No free periods in the schedule yet. Please make sure to set both working periods and busy periods.`);
-            return null;
+        if(Object.keys(this._workingHours).length === 0) {
+            throw new Error('Cannot get freePeriods: necessary data is missing. Please, make sure you have set working hours.')
         }
+       if(this._hasUncomputedChanges) {
+            const freePeriods = this._computeFreePeriods();
+            this._setFreePeriods(freePeriods);
+           this._hasUncomputedChanges = false;
+           console.log('recalculation...')
+       } 
+       return this._freePeriods;
     };
-    _freePeriods = [];
     constructor(workingHours={}, busyPeriods=[]) {
         this._id = Date.now();
         if(this._hoursCheck(workingHours) && Array.isArray(busyPeriods)){
@@ -214,18 +217,37 @@ class Schedule {
         });
         return thirtyMinuteSlots;   
     };
-    _formatFreeSlots(freeSlots) {
+    _computeFreePeriods(){
+        const fiveMinuteSlots = this._splitWorkingHoursToFiveMinSlots(this._workingHours);
+        const slotsWithTargets = this._targetBusySlots(fiveMinuteSlots);
+        const freeSlots = this._getFreeSlots(slotsWithTargets);
+        return this._formatFreePeriods(freeSlots); 
+    }
+    _formatFreePeriods(freeSlots) {
         return freeSlots.reduce((result, slotArr)=> {
             return [
                 ...result,
-                {start: slotArr[0], end: slotArr[slotArr.length -1]}
+                {start: slotArr[0], stop: slotArr[slotArr.length -1]}
             ]
         },[]);
-    }
+    };
+    _setFreePeriods(freePeriods) {
+        this._freePeriods = freePeriods;
+    };
+    _freePeriods = [];
+    _hasUncomputedChanges = false;
 
 } 
 
 const schedule = new Schedule();
 schedule.workingHours = {start: "00:00", stop: "03:30"};
-schedule.busyPeriods = [{start: "00:00", stop: "00:25"}, {start: "00:55", stop: "01:15"}, {start:"02:05", stop: "03:00"}]
-schedule.test
+console.log(schedule.freePeriods);
+console.log(schedule.freePeriods);
+console.log(schedule.freePeriods);
+schedule.busyPeriods = [{start: "00:00", stop: "01:20"}, {start: "01:25", stop: "02:30"}];
+console.log(schedule.freePeriods);
+console.log(schedule.freePeriods);
+schedule.workingHours = {start: "09:00", stop: "18:00"};
+schedule.busyPeriods = [{start: "09:30", stop: "10:00"}, {start: "11:25", stop: "12:30"}];
+console.log(schedule.freePeriods);
+console.log(schedule.freePeriods);
