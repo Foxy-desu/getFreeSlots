@@ -1,3 +1,22 @@
+const workingHours = {start: '9:00', stop: '21:00'};
+const busy = [
+    {'start' : '10:30',
+    'stop' : '10:50'
+    },
+    {'start' : '18:40',
+    'stop' : '18:50'
+    },
+    {'start' : '14:40',
+    'stop' : '15:50'
+    },
+    {'start' : '16:40',
+    'stop' : '17:20'
+    },
+    {'start' : '20:05',
+    'stop' : '20:20'
+    }
+];
+
 class Schedule {
     get test() {
         console.log(this._formatFreeSlots(this._getFreeSlots(this._targetBusySlots(this._splitWorkingHoursToFiveMinSlots(this._workingHours)))));
@@ -240,14 +259,10 @@ class Schedule {
 } 
 
 const schedule = new Schedule();
-schedule.workingHours = {start: "00:00", stop: "03:30"};
+schedule.workingHours = workingHours;
 console.log(schedule.freePeriods);
 console.log(schedule.freePeriods);
-console.log(schedule.freePeriods);
-schedule.busyPeriods = [{start: "00:00", stop: "01:20"}, {start: "01:25", stop: "02:30"}];
-console.log(schedule.freePeriods);
-console.log(schedule.freePeriods);
-schedule.workingHours = {start: "09:00", stop: "18:00"};
-schedule.busyPeriods = [{start: "09:30", stop: "10:00"}, {start: "11:25", stop: "12:30"}];
+
+schedule.busyPeriods = busy;
 console.log(schedule.freePeriods);
 console.log(schedule.freePeriods);
