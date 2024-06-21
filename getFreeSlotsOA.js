@@ -18,9 +18,6 @@ const busy = [
 ];
 
 class Schedule {
-    get test() {
-        console.log(this._formatFreeSlots(this._getFreeSlots(this._targetBusySlots(this._splitWorkingHoursToFiveMinSlots(this._workingHours)))));
-    }
     get workingHours() {
         if(Object.keys(this._workingHours).length) {
             return (
@@ -32,20 +29,16 @@ class Schedule {
 
         } else {
             console.warn(`No working hours were set yet. Please set working hours using "workingHours" property`);
-            return null;
+            return {};
         } 
     };
     set workingHours(workingHours){
-        try{
-            if(this._hoursCheck(workingHours)){
-                this._workingHours = this._hoursNormalize(workingHours);
-                this._hasUncomputedChanges = true;
-                console.log("Working hours were successfully set.")
-            } else {
-                throw new Error('An error has occurred while trying to set working hours. Please, make sure you pass an object of the format {start: "00:00", stop: "00:00"}')
-            }
-        }catch(err) {
-            console.error(err.message);
+        if(this._hoursCheck(workingHours)){
+            this._workingHours = this._hoursNormalize(workingHours);
+            this._hasUncomputedChanges = true;
+            console.warn("Working hours were successfully set.")
+        } else {
+            throw new Error('An error has occurred while trying to set working hours. Please, make sure you pass an object of the format {start: "00:00", stop: "00:00"}')
         }
     };
     get busyPeriods() {
@@ -58,27 +51,23 @@ class Schedule {
             })
         } else {
             console.warn(`No busy periods were set yet. Please set busy periods using "busyPeriods" property`);
-            return null;
+            return [];
         }
 
     };
     set busyPeriods(periods){
-        try{
-            const checkedPeriods = this._getCheckedBusyPeriods(periods);
-            if(checkedPeriods.passed.length > 0) {
-                this._busyPeriods = checkedPeriods.passed.map((period)=> {
-                    return this._hoursNormalize(period)
-                });
-                this._hasUncomputedChanges = true;
+        const checkedPeriods = this._getCheckedBusyPeriods(periods);
+        if(checkedPeriods.passed.length > 0) {
+            this._busyPeriods = checkedPeriods.passed.map((period)=> {
+                return this._hoursNormalize(period)
+            });
+            this._hasUncomputedChanges = true;
 
-            } else {
-                throw new Error('An error occurred while trying to set busy periods. No busy period qualified creteria. Please, make sure you pass an array of objects of the format {start: "00:00", stop: "00:00"} +- 5mins.')
-            }
-            console.warn(`${this._busyPeriods.length} ${this._busyPeriods.length ? 'periods were':'period was'} successfully set. ${checkedPeriods.failed.length > 0 ? checkedPeriods.failed.length + ' did not qualify.' : ''}`);
-            checkedPeriods.failed.length > 0 && console.table(checkedPeriods.failed);
-        } catch(err){
-            console.error(err.message);
+        } else {
+            throw new Error('An error occurred while trying to set busy periods. No busy period qualified creteria. Please, make sure you pass an array of objects of the format {start: "00:00", stop: "00:00"} +- 5mins.')
         }
+        console.warn(`${this._busyPeriods.length} ${this._busyPeriods.length ? 'periods were':'period was'} successfully set. ${checkedPeriods.failed.length > 0 ? checkedPeriods.failed.length + ' did not qualify.' : ''}`);
+        checkedPeriods.failed.length > 0 && console.table(checkedPeriods.failed);
     };
     get freePeriods() {
         if(Object.keys(this._workingHours).length === 0) {
