@@ -114,6 +114,13 @@ class Schedule {
             return true;
         } else return false;
     };
+    _hoursArrayCheck(hoursArr){
+        //checks if passed data is a non-empty array
+        if(Array.isArray(hoursArr) || hoursArr.length > 0) {
+            return true
+        }
+        return false;
+    }
     _hoursNormalize(hours) {
         return Object.entries(hours).reduce((result, entry)=>{
             const value = entry[1].split(':');
