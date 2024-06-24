@@ -220,6 +220,17 @@ class Schedule {
         let slotEndIndex = 6;
 
         slotsWithTargets.forEach((currSlot, index)=>{
+            if(!currSlot && index === slotEndIndex) {
+                const final = slotsWithTargets[index - 1].split(':');
+                final[1] = String(Number(final[1])+ 5);
+                const joined = this._formatHoursOutput(final);
+                slot.push(joined);
+                thirtyMinuteSlots.push(slot)
+
+                slotStartIndex = index + 1;
+                slotEndIndex = slotStartIndex + 6;
+                slot = [];
+            }
             if(!currSlot) {
                 slotStartIndex = index + 1;
                 slotEndIndex = slotStartIndex + 6;
