@@ -19,7 +19,7 @@ class Schedule {
     }
     set workHours(workHours){
         if(this._checkTimeFrame(workHours)){
-            this._workHours = this._normalizeTimeFrame(workHours, Number);
+            this._workHours = this._fixTimeFrameFormat(workHours, this._fillWithZero);
             this._hasChanges = true;
         }else {
             throw new Error('Could not set work hours. Please, make sure you pass an object of format {start: "00:00", stop: "00:00"}');
@@ -27,10 +27,12 @@ class Schedule {
     };
     set busyTime(busy){
         if(this._checkTimeList(busy)){
-            const sorted = this._getSortedTimeList(busy).passed;
-            this._busy = [...this._busy, ...sorted.passed];
+            const sorted = this._getSortedTimeList(busy);
+            const passed = sorted.passed
+            this._busy = [...this._busy, ...passed];
             this._hasChanges = true;
-            console.log(sorted.passed.length + ' added to the list of busy time frames.' + sorted.failed.length + ' failed to load');
+            console.log(sorted.passed.length + ' added to the list of busy time frames. ' + sorted.failed.length + ' failed to load. Make sure you pass an object of format {start: "00:00", stop: "00:00"} +- 5 min');
+            console.table(sorted.failed)
         } else {
             throw new Error('Could not set busy time. Please, make sure you pass an array of objects of format {start: "00:00", stop: "00:00"}');
         }
@@ -46,12 +48,13 @@ class Schedule {
     _initiateSchedule(workHours, busy){
         // check passed data and initialize variables (for constructor method only).
         if(this._checkTimeFrame(workHours)){
-            this._workHours = workHours;
+            this._workHours = this. _fixTimeFrameFormat(workHours, this._fillWithZero);
             this._hasChanges = true;
         } else this._workHours = {};
 
         if(this._checkTimeList(busy)){
-            this._busy = busy;
+            const sorted = this._getSortedTimeList(busy);
+            this._busy = sorted.passed;
             this._hasChanges = true;
         }else {
             this._busy = [];
@@ -59,19 +62,17 @@ class Schedule {
     };
     _checkTimeFrame(timeFrame){
         //checks if passed data is an object of the type {start: "00:00, stop: "00:00"} or {start: "0:0", stop: "0:0"};
-        if(
-            Object.prototype.toString.call(timeFrame) === '[object Object]'
+        if(Object.prototype.toString.call(timeFrame) === '[object Object]'
             && Object.keys(timeFrame).length === 2
             && Object.keys(timeFrame).includes('start')
             && Object.keys(timeFrame).includes('stop')
-            && Object.values(timeFrame).every((value)=> {
-                return (
-                    typeof value ==='string'
-                    && value.search(/^([0-1]?[0-9]|2[0-3]):[0-5][05]?$/)!== -1
-                );
-            })  
-        ) return true;
-        return false;
+            && Object.values(timeFrame).every((value)=> typeof value ==='string')
+            && Object.values(timeFrame).every((value)=> value.match(/^([0-1]?[0-9]|2[0-3]):[0-5][0|5]?$/))
+        ){
+            return true
+        }else {
+            return false;
+        }
     };
     _checkTimeList(timeList){
          //checks if passed data is a non-empty array
@@ -90,8 +91,8 @@ class Schedule {
         const result = {passed:[], failed:[]};
         timeList.forEach((timeFrame, index)=>{
             if(this._checkTimeFrame(timeFrame)) {
-                const normalized = this._normalizeTimeFrame(timeFrame, this._fillWithZero);
-                result.passed.push(normalized);
+                const fixFormated = this._fixTimeFrameFormat(timeFrame, this._fillWithZero);
+                result.passed.push(fixFormated);
             } else {
                 result.failed.push(Object.assign(timeFrame, {position: index}));
             }
@@ -110,6 +111,15 @@ class Schedule {
             }
         }, {})
     };
+    _fixTimeFrameFormat(timeFrame, callback){
+        return Object.entries(timeFrame).reduce((result, entry)=>{
+            const timeValue = entry[1].split(':');
+            return {
+                ...result,
+                [entry[0]]: timeValue.map((timePart)=> callback(timePart)).join(':')
+            }
+        }, {})
+    }
     _fillWithZero(timePart){
         return typeof timePart === 'string'
         ? timePart.padStart(2, '0')
@@ -179,7 +189,7 @@ class Schedule {
         const slotsWithTargets = fiveMinuteSlots.map((slot)=> {
             let isBusy = false;
             this._busy.forEach((busyPeriod) => {
-                if (slot >= this._formatHoursOutput(busyPeriod.start) && slot < this._formatHoursOutput(busyPeriod.stop)) {
+                if (slot >= busyPeriod.start && slot < busyPeriod.stop) {
                     isBusy = true;
                 }
             });
@@ -246,7 +256,7 @@ class Schedule {
         },[]);
     };
     _computeFreeTimeFrames(){
-        const fiveMinuteSlots = this._getFiveMinuteSlots(this._workHours);
+        const fiveMinuteSlots = this._getFiveMinuteSlots(this._normalizeTimeFrame(this._workHours, Number));
         const targetedSlots = this._targetBusySlots(fiveMinuteSlots);
         const freeSlots = this._getFreeSlots(targetedSlots);
         return this._formFreeTimeFramesList(freeSlots);
@@ -257,3 +267,26 @@ class Schedule {
     _hasChanges = false;
     _freeTimeFrames = [];
 };
+
+const workingHours = {start: '9:00', stop: '21:00'};
+const busy = [
+    {'start' : '9:30',
+    'stop' : '10:5'
+    },
+    {'start' : '18:40',
+    'stop' : '18:50'
+    },
+    {'start' : '14:40',
+    'stop' : '15:50'
+    },
+    {'start' : '16:40',
+    'stop' : '17:20'
+    },
+    {'start' : '20:05',
+    'stop' : '20:20'
+    }
+];
+
+const schedule = new Schedule(workingHours, busy);
+console.log(schedule.freeTime);
+console.log(schedule.freeTime);
