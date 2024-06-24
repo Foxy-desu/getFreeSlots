@@ -69,6 +69,19 @@ class Schedule {
         console.warn(`${this._busyPeriods.length} ${this._busyPeriods.length ? 'periods were':'period was'} successfully set. ${checkedPeriods.failed.length > 0 ? checkedPeriods.failed.length + ' did not qualify.' : ''}`);
         checkedPeriods.failed.length > 0 && console.table(checkedPeriods.failed);
     };
+    set additionalBusyPeriods(periods) {
+        if(this._hoursCheck(periods)){
+            this._busyPeriods = [...this._busyPeriods, this._hoursNormalize(periods)];
+            this._hasUncomputedChanges = true;
+        } else if(this._hoursArrayCheck(periods)){
+            const checkedPeriods = this._getCheckedBusyPeriods(periods).passed;
+            const normalized = checkedPeriods.map((period)=> this._hoursNormalize(period));
+            this._busyPeriods = [...this._busyPeriods, ...normalized];
+            this._hasUncomputedChanges = true;
+        } else {
+            throw new Error('An error has occurred while trying to set additional busy periods. Please, make sure you pass an object or an array of objects of the format {start: "00:00", stop: "00:00"}')
+        }
+    }
     get freePeriods() {
         if(Object.keys(this._workingHours).length === 0) {
             throw new Error('Cannot get freePeriods: necessary data is missing. Please, make sure you have set working hours.')
